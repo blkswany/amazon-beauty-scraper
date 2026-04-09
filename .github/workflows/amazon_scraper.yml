@@ -37,4 +37,5 @@ jobs:
           path: |
             amazon_beauty_bestsellers_*.xlsx
             amazon_beauty_report_*.xlsx
+            screenshot_*.png
           retention-days: 30
