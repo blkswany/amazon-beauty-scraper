@@ -51,25 +51,21 @@ COUNTRIES = {
 }
 
 # ─── JavaScript ───────────────────────────────────────────────────────────────
-# 기존 스니펫을 그대로 사용, CSV 다운로드 대신 JSON 반환으로 수정
 JS_EXTRACT = """
 () => {
     const items = [...document.querySelectorAll("div.zg-grid-general-faceout")];
     const rows = [];
     items.forEach((el, i) => {
-        // title: 3줄 클램프 우선, 없으면 1줄 클램프 fallback
         const titleEl = el.querySelector("div._cDEzb_p13n-sc-css-line-clamp-3_g3dy1")
                      || el.querySelector("div._cDEzb_p13n-sc-css-line-clamp-1_1tdkm")
                      || el.querySelector("span.p13n-sc-truncate-desktop-type2");
         const title = titleEl ? titleEl.innerText.trim() : "";
 
-        // rating: aria-label 에서 숫자 추출
         const reviewLink = el.querySelector("a[aria-label*='stars']")
                         || el.querySelector("a[aria-label*='out of']");
         const ariaLabel = reviewLink ? reviewLink.getAttribute("aria-label") : "";
         const rating = (ariaLabel.match(/([0-9.]+) out of/) || [])[1] || "";
 
-        // reviews count
         const reviewsEl = el.querySelector("span.a-size-small[aria-hidden='true']");
         const reviews = reviewsEl ? reviewsEl.innerText.trim() : "";
 
@@ -82,20 +78,33 @@ JS_EXTRACT = """
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 async def accept_cookies(page):
-    """EU 사이트 쿠키 동의 팝업 처리"""
-    for selector in ["#sp-cc-accept", "input#sp-cc-accept", "button#sp-cc-accept"]:
+    """EU 사이트 쿠키 동의 팝업 처리 - 다양한 셀렉터 시도"""
+    selectors = [
+        "#sp-cc-accept",
+        "input#sp-cc-accept",
+        "button#sp-cc-accept",
+        "[data-cel-widget='sp-cc-accept']",
+        "input[name='accept']",
+        # 일반적인 EU 쿠키 배너
+        "#onetrust-accept-btn-handler",
+        ".accept-cookies-button",
+        "[id*='cookie'] button",
+        "[class*='cookie'] button[class*='accept']",
+    ]
+    for selector in selectors:
         try:
             btn = page.locator(selector)
-            if await btn.is_visible(timeout=3000):
+            if await btn.is_visible(timeout=2000):
                 await btn.click()
-                await page.wait_for_timeout(1000)
-                print("    ✓ 쿠키 동의 완료")
-                return
+                await page.wait_for_timeout(1500)
+                print(f"    ✓ 쿠키 동의 완료 ({selector})")
+                return True
         except Exception:
             pass
+    return False
 
 
-async def scrape_page(page, url: str, rank_offset: int = 0) -> list:
+async def scrape_page(page, url: str, rank_offset: int = 0, country: str = "", page_idx: int = 0) -> list:
     print(f"    GET {url}")
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=40000)
@@ -103,14 +112,20 @@ async def scrape_page(page, url: str, rank_offset: int = 0) -> list:
         print("    타임아웃, 재시도...")
         await page.goto(url, wait_until="domcontentloaded", timeout=40000)
 
-    # 쿠키 팝업 처리 (첫 페이지에서만 필요하지만 매번 체크해도 무해)
+    # 쿠키 팝업 처리
     await accept_cookies(page)
+
+    # 잠깐 대기 (팝업 처리 후 페이지 안정화)
+    await page.wait_for_timeout(2000)
 
     # 상품 그리드 로딩 대기
     try:
         await page.wait_for_selector("div.zg-grid-general-faceout", timeout=20000)
     except PlaywrightTimeout:
-        print("    ⚠ 상품 목록 없음 (CAPTCHA 또는 차단 가능성)")
+        # 스크린샷 저장 (디버깅용)
+        screenshot_path = f"screenshot_{country}_p{page_idx + 1}.png"
+        await page.screenshot(path=screenshot_path, full_page=False)
+        print(f"    ⚠ 상품 목록 없음 — 스크린샷 저장됨: {screenshot_path}")
         return []
 
     # 50개 로드될 때까지 스크롤
@@ -144,14 +159,27 @@ async def scrape_country(browser, country: str, urls: list) -> list:
         ),
         locale="en-US",
         viewport={"width": 1280, "height": 900},
+        java_script_enabled=True,
+        extra_http_headers={
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
     )
+
+    # headless 감지 우회
+    await context.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3] });
+        window.chrome = { runtime: {} };
+    """)
+
     page = await context.new_page()
     all_rows = []
     rank_offset = 0
 
     try:
         for i, url in enumerate(urls):
-            rows = await scrape_page(page, url, rank_offset)
+            rows = await scrape_page(page, url, rank_offset, country=country, page_idx=i)
             all_rows.extend(rows)
             rank_offset += len(rows)
             if i < len(urls) - 1:
@@ -174,7 +202,6 @@ async def main():
     print(f" 날짜: {today}")
     print(f" 저장 경로: {output_path}")
     print("=" * 55)
-    print("※ 브라우저가 열립니다. CAPTCHA 발생 시 직접 해결하세요.\n")
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
@@ -198,7 +225,6 @@ async def main():
                 print(f"[{country}] 오류: {e}")
                 country_data[country] = []
 
-            # 국가 간 대기
             if country != countries_list[-1]:
                 delay = random.uniform(5, 10)
                 print(f"\n다음 국가까지 {delay:.1f}초 대기...\n")
