@@ -1,0 +1,40 @@
+name: Amazon Beauty Scraper
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Python 설치
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 패키지 설치
+        run: |
+          pip install playwright pandas openpyxl
+          playwright install chromium
+          playwright install-deps chromium
+
+      - name: 스크래핑
+        run: python scrape_amazon_beauty.py
+
+      - name: 리포트 생성
+        run: python build_report.py
+
+      - name: 결과 파일 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: amazon-beauty-report-${{ github.run_id }}
+          path: |
+            amazon_beauty_bestsellers_*.xlsx
+            amazon_beauty_report_*.xlsx
+          retention-days: 30
