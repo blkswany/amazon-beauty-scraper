@@ -178,8 +178,11 @@ async def main():
 
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
-            headless=False,  # 봇 감지 우회를 위해 유시 브라우저 사용
-            args=["--start-maximized"],
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled",
+            ],
         )
 
         country_data = {}
