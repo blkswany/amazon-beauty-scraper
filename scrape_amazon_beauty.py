@@ -115,16 +115,6 @@ async def scrape_page(page, url: str, rank_offset: int = 0, country: str = "", p
     # 쿠키 팝업 처리
     await accept_cookies(page)
 
-    # "Continue shopping" 인터셉트 페이지 처리 (UK/FR 등)
-    try:
-        btn = page.locator("input[value='Continue shopping'], button:has-text('Continue shopping')")
-        if await btn.is_visible(timeout=3000):
-            await btn.click()
-            print("    ✓ Continue shopping 클릭")
-            await page.wait_for_timeout(2000)
-    except Exception:
-        pass
-
     # 잠깐 대기 (팝업 처리 후 페이지 안정화)
     await page.wait_for_timeout(2000)
 
