@@ -115,6 +115,20 @@ async def scrape_page(page, url: str, rank_offset: int = 0, country: str = "", p
     # 쿠키 팝업 처리
     await accept_cookies(page)
 
+    # "Continue shopping" 인터셉트 페이지 처리 (언어 무관)
+    # 상품 그리드가 없고 submit 버튼만 있는 경우에만 클릭
+    try:
+        has_products = await page.locator("div.zg-grid-general-faceout").count()
+        if has_products == 0:
+            btn = page.locator("input[type='submit'], button[type='submit']").first
+            if await btn.is_visible(timeout=3000):
+                await btn.click()
+                print("    ✓ 인터셉트 페이지 버튼 클릭")
+                await page.wait_for_load_state("domcontentloaded")
+                await page.wait_for_timeout(2000)
+    except Exception:
+        pass
+
     # 잠깐 대기 (팝업 처리 후 페이지 안정화)
     await page.wait_for_timeout(2000)
 
