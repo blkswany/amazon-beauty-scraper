@@ -26,7 +26,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 TODAY = datetime.now().strftime("%Y-%m-%d")
-TEMPLATE_FILE = Path("260408_amazon_beauty.xlsx")  # 브랜드 매핑 원본
+TEMPLATE_FILE = Path("260408_amazon_beauty.xlsx")  # 브랜드 매핑 원본 (없어도 동작)
 
 COUNTRIES = [
     ("US", "미국"),
@@ -37,15 +37,32 @@ COUNTRIES = [
     ("ES", "스페인"),
 ]
 
+# ─── 하드코딩 브랜드 매핑 (템플릿 파일 없을 때 기본값으로 사용) ──────────────
+BUILTIN_BRAND_MAP = {
+    "medicube":        "에이피알",
+    "EQQUALBERRY":     "부스터스",
+    "Dr.Althea":       "더퓨어랩",
+    "Dr.Melaxin":      "브랜드501",
+    "Anua":            "더파운더즈",
+    "KAHI":            "코리아테크",
+    "Biodance":        "뷰티셀렉션",
+    "d'alba":          "달바글로벌",
+    "celimax":         "앱솔브랩",
+    "Cosrx":           "아모레퍼시픽",
+    "Illiyoon":        "아모레퍼시픽",
+    "MIZON":           "피에프디",
+    "Beauty of Joseon":"구다이글로벌",
+}
+
 # ─── Style helpers ────────────────────────────────────────────────────────────
 _THIN = Side(style="thin")
 BORDER = Border(left=_THIN, right=_THIN, top=_THIN, bottom=_THIN)
 
-FILL_TITLE    = PatternFill("solid", fgColor="1F4E79")   # 진남색 - 최상단 타이틀
-FILL_COUNTRY  = PatternFill("solid", fgColor="2E75B6")   # 파랑 - 국가명
-FILL_HEADER   = PatternFill("solid", fgColor="BDD7EE")   # 연파랑 - 컬럼 헤더
-FILL_KOREAN   = PatternFill("solid", fgColor="FFF2CC")   # 노랑 - 한국 브랜드 행
-FILL_BRAND_H  = PatternFill("solid", fgColor="2E75B6")   # 브랜드 시트 헤더
+FILL_TITLE    = PatternFill("solid", fgColor="1F4E79")
+FILL_COUNTRY  = PatternFill("solid", fgColor="2E75B6")
+FILL_HEADER   = PatternFill("solid", fgColor="BDD7EE")
+FILL_KOREAN   = PatternFill("solid", fgColor="FFF2CC")
+FILL_BRAND_H  = PatternFill("solid", fgColor="2E75B6")
 
 def _cell(ws, row, col, value=None, fill=None, bold=False, font_color="000000",
           size=10, h_align="left", v_align="center", wrap=False, border=True, number_format=None):
@@ -64,23 +81,31 @@ def _cell(ws, row, col, value=None, fill=None, bold=False, font_color="000000",
 
 # ─── Brand mapping ────────────────────────────────────────────────────────────
 def load_brand_mapping():
-    """기존 파일에서 브랜드 매핑 로드. 파일 없으면 빈 dict 반환."""
-    if not TEMPLATE_FILE.exists():
-        print(f"  [경고] 템플릿 파일 없음: {TEMPLATE_FILE} — 브랜드 매핑 없이 진행")
-        return {}
-    try:
-        df = pd.read_excel(TEMPLATE_FILE, sheet_name="브랜드", header=0)
-    except Exception as e:
-        print(f"  [경고] 브랜드 시트 로드 실패: {e}")
-        return {}
-    brands = {}
-    for _, row in df.iterrows():
-        brand = str(row.iloc[0]).strip()
-        company = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
-        if brand and company and brand not in ("브랜드명", "nan", "ㅇ"):
-            brands[brand] = company
-    print(f"  브랜드 매핑 {len(brands)}개 로드됨")
-    return brands
+    """
+    브랜드 매핑 로드 순서:
+    1. 템플릿 엑셀 파일(260408_amazon_beauty.xlsx)이 있으면 거기서 로드
+    2. 없으면 하드코딩된 BUILTIN_BRAND_MAP 사용
+    """
+    if TEMPLATE_FILE.exists():
+        try:
+            df = pd.read_excel(TEMPLATE_FILE, sheet_name="브랜드", header=0)
+            brands = {}
+            for _, row in df.iterrows():
+                brand = str(row.iloc[0]).strip()
+                company = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else ""
+                if brand and company and brand not in ("브랜드명", "nan", "ㅇ"):
+                    brands[brand] = company
+            # 하드코딩 매핑도 병합 (템플릿에 없는 브랜드 보완)
+            for brand, company in BUILTIN_BRAND_MAP.items():
+                if brand not in brands:
+                    brands[brand] = company
+            print(f"  브랜드 매핑 {len(brands)}개 로드됨 (템플릿 파일 기준)")
+            return brands
+        except Exception as e:
+            print(f"  [경고] 브랜드 시트 로드 실패: {e} — 기본 매핑 사용")
+
+    print(f"  [안내] 템플릿 파일 없음 — 하드코딩 브랜드 매핑 {len(BUILTIN_BRAND_MAP)}개 사용")
+    return dict(BUILTIN_BRAND_MAP)
 
 
 def match_brand(title, brand_map):
@@ -94,10 +119,6 @@ def match_brand(title, brand_map):
 
 # ─── 브랜드 시트 ──────────────────────────────────────────────────────────────
 def write_brand_sheet(wb, brand_map):
-    """
-    브랜드 매핑 테이블 (브랜드명 | 한국 기업명)
-    여기서 직접 브랜드 추가/수정 후 build_report.py 재실행하면 반영됨
-    """
     ws = wb.create_sheet(title="브랜드")
 
     ws.column_dimensions["A"].width = 25
@@ -114,16 +135,11 @@ def write_brand_sheet(wb, brand_map):
         _cell(ws, r, 1, brand, h_align="left")
         _cell(ws, r, 2, company, bold=True, h_align="center")
 
-    print(f"  [브랜드] 시트 완료 ({len(brand_map)}개 브랜드, COUNTIF 수식 포함)")
+    print(f"  [브랜드] 시트 완료 ({len(brand_map)}개 브랜드)")
     return ws
 
 # ─── 국가 시트 ────────────────────────────────────────────────────────────────
 def write_country_sheet(wb, country_en, country_ko, df_raw, brand_map):
-    """
-    국가별 시트 작성
-    기업명 컬럼: Python으로 브랜드 매핑 값 직접 입력
-    한국 브랜드 행은 노란색 하이라이트
-    """
     ws = wb.create_sheet(title=country_ko)
 
     ws.column_dimensions["A"].width = 6
@@ -158,14 +174,14 @@ def write_country_sheet(wb, country_en, country_ko, df_raw, brand_map):
     print(f"  [{country_ko}] 시트 완료 ({len(df_raw)}행)")
     return ws
 
-# ─── 한국 정리 색상 팔레트 (회색 베이스) ─────────────────────────────────────
-GRAY_TITLE   = PatternFill("solid", fgColor="404040")  # 진회색 - 타이틀
-GRAY_COUNTRY = PatternFill("solid", fgColor="737373")  # 중간회색 - 국가명
-GRAY_HEADER  = PatternFill("solid", fgColor="D9D9D9")  # 연회색 - 컬럼헤더
-GRAY_ROW_ODD = PatternFill("solid", fgColor="FFFFFF")  # 흰색 - 홀수행
-GRAY_ROW_EVN = PatternFill("solid", fgColor="F2F2F2")  # 아주 연한 회색 - 짝수행
-GRAY_COMPANY = PatternFill("solid", fgColor="E8E8E8")  # 회사명 강조
-GRAY_BORDER  = Side(style="thin", color="BFBFBF")      # 회색 테두리
+# ─── 한국 정리 색상 팔레트 ────────────────────────────────────────────────────
+GRAY_TITLE   = PatternFill("solid", fgColor="404040")
+GRAY_COUNTRY = PatternFill("solid", fgColor="737373")
+GRAY_HEADER  = PatternFill("solid", fgColor="D9D9D9")
+GRAY_ROW_ODD = PatternFill("solid", fgColor="FFFFFF")
+GRAY_ROW_EVN = PatternFill("solid", fgColor="F2F2F2")
+GRAY_COMPANY = PatternFill("solid", fgColor="E8E8E8")
+GRAY_BORDER  = Side(style="thin", color="BFBFBF")
 
 def _gray_border():
     return Border(left=GRAY_BORDER, right=GRAY_BORDER,
@@ -187,11 +203,10 @@ def _kcell(ws, row, col, value=None, fill=None, bold=False,
 # ─── 한국 정리 시트 ───────────────────────────────────────────────────────────
 def write_korean_summary(wb, country_data, brand_map):
     ws = wb.create_sheet(title="한국 정리")
-    COLS_PER = 5   # 순위/제품/평점/리뷰/회사
-    COL_GAP  = 1   # 국가 사이 빈 열
-    STRIDE   = COLS_PER + COL_GAP  # 6
+    COLS_PER = 5
+    COL_GAP  = 1
+    STRIDE   = COLS_PER + COL_GAP
 
-    # ── 한국 브랜드 행 수집 ──────────────────────────────────────────────────
     korean_by_country = []
     for en, ko in COUNTRIES:
         df = country_data.get(en, pd.DataFrame())
@@ -210,18 +225,16 @@ def write_korean_summary(wb, country_data, brand_map):
 
     max_rows = max((len(r) for r in korean_by_country), default=0)
 
-    # ── 열 너비 ─────────────────────────────────────────────────────────────
     for ci in range(len(COUNTRIES)):
         base = ci * STRIDE + 1
-        ws.column_dimensions[get_column_letter(base)].width   = 5    # 순위
-        ws.column_dimensions[get_column_letter(base+1)].width = 48   # 제품
-        ws.column_dimensions[get_column_letter(base+2)].width = 6    # 평점
-        ws.column_dimensions[get_column_letter(base+3)].width = 9    # 리뷰
-        ws.column_dimensions[get_column_letter(base+4)].width = 13   # 회사
+        ws.column_dimensions[get_column_letter(base)].width   = 5
+        ws.column_dimensions[get_column_letter(base+1)].width = 48
+        ws.column_dimensions[get_column_letter(base+2)].width = 6
+        ws.column_dimensions[get_column_letter(base+3)].width = 9
+        ws.column_dimensions[get_column_letter(base+4)].width = 13
         if ci < len(COUNTRIES) - 1:
             ws.column_dimensions[get_column_letter(base+5)].width = 2
 
-    # ── ROW 1: 타이틀 ────────────────────────────────────────────────────────
     ws.row_dimensions[1].height = 20
     for ci, (en, ko) in enumerate(COUNTRIES):
         base = ci * STRIDE + 1
@@ -231,7 +244,6 @@ def write_korean_summary(wb, country_data, brand_map):
                fill=GRAY_TITLE, bold=True, font_color="FFFFFF",
                h_align="center", size=9)
 
-    # ── ROW 2: 국가명 ────────────────────────────────────────────────────────
     ws.row_dimensions[2].height = 18
     for ci, (en, ko) in enumerate(COUNTRIES):
         base = ci * STRIDE + 1
@@ -241,7 +253,6 @@ def write_korean_summary(wb, country_data, brand_map):
                fill=GRAY_COUNTRY, bold=True, font_color="FFFFFF",
                h_align="center", size=10)
 
-    # ── ROW 3: 컬럼 헤더 ─────────────────────────────────────────────────────
     ws.row_dimensions[3].height = 16
     col_labels = ["순위", "제품", "평점", "리뷰", "회사"]
     for ci in range(len(COUNTRIES)):
@@ -250,11 +261,9 @@ def write_korean_summary(wb, country_data, brand_map):
             _kcell(ws, 3, base + j, lbl,
                    fill=GRAY_HEADER, bold=True, h_align="center", size=9)
 
-    # ── ROW 4+: 데이터 (1줄 고정, wrap 없음) ─────────────────────────────────
     for idx in range(max_rows):
         r = idx + 4
-        ws.row_dimensions[r].height = 16   # 1줄 고정
-
+        ws.row_dimensions[r].height = 16
         row_fill = GRAY_ROW_ODD if idx % 2 == 0 else GRAY_ROW_EVN
 
         for ci, rows in enumerate(korean_by_country):
@@ -265,10 +274,8 @@ def write_korean_summary(wb, country_data, brand_map):
                 _kcell(ws, r, base+1, item["title"],   fill=row_fill, h_align="left", wrap=False)
                 _kcell(ws, r, base+2, item["rating"],  fill=row_fill, h_align="center")
                 _kcell(ws, r, base+3, item["reviews"], fill=row_fill, h_align="center")
-                _kcell(ws, r, base+4, item["company"], fill=GRAY_COMPANY, h_align="center",
-                       bold=True)
+                _kcell(ws, r, base+4, item["company"], fill=GRAY_COMPANY, h_align="center", bold=True)
             else:
-                # 빈 셀도 테두리/배경 맞춤
                 for j in range(COLS_PER):
                     _kcell(ws, r, base + j, fill=row_fill)
 
@@ -296,7 +303,6 @@ def main():
     print(f" 출력: {output_path}")
     print("=" * 55)
 
-    # ── 1. 스크래핑 데이터 로드 ────────────────────────────────────────────
     if not scraped_path.exists():
         print(f"[오류] 파일 없음: {scraped_path}")
         sys.exit(1)
@@ -311,17 +317,13 @@ def main():
             print(f"  [{en}] 로드 실패: {e}")
             country_data[en] = pd.DataFrame()
 
-    # ── 2. 브랜드 매핑 로드 ───────────────────────────────────────────────
     brand_map = load_brand_mapping()
 
-    # ── 3. 워크북 생성 ────────────────────────────────────────────────────
     wb = Workbook()
-    wb.remove(wb.active)  # 기본 Sheet 제거
+    wb.remove(wb.active)
 
-    # 브랜드 시트
     write_brand_sheet(wb, brand_map)
 
-    # 국가 시트
     for en, ko in COUNTRIES:
         df = country_data.get(en, pd.DataFrame())
         if df.empty:
@@ -330,10 +332,8 @@ def main():
         else:
             write_country_sheet(wb, en, ko, df, brand_map)
 
-    # 한국 정리 시트
     write_korean_summary(wb, country_data, brand_map)
 
-    # ── 4. 저장 (파일이 열려 있으면 타임스탬프 이름으로 저장) ───────────────
     try:
         wb.save(output_path)
     except PermissionError:
