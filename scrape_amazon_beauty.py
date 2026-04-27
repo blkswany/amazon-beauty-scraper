@@ -89,49 +89,35 @@ JS_EXTRACT_AMAZON = """
 # 라쿠텐용 추출 스크립트
 JS_EXTRACT_RAKUTEN = """
 () => {
-    // 라쿠텐 랭킹 아이템 선택자
-    const items = [...document.querySelectorAll(".rnkRanking_itembox, div[class^='rnkRanking_item']")];
+    // 1〜3位のボックスと、4位以降のボックスをすべて取得
+    const items = [...document.querySelectorAll(".rnkRanking_top3box, .rnkRanking_itembox, div[class^='rnkRanking_item']")];
     const rows = [];
     
-    items.forEach((el, i) => {
-        let rank = i + 1;
+    items.forEach((el) => {
+        // 1. タイトル
+        const titleEl = el.querySelector(".rnkRanking_itemName");
+        if (!titleEl) return; // タイトルがない要素（広告など）はスキップ
+        const title = titleEl.innerText.trim();
         
-        // 타이틀
-        const titleEl = el.querySelector(".rnkRanking_itemName, .rnkRanking_title");
-        const title = titleEl ? titleEl.innerText.trim() : "";
-        
-        // 리뷰 정보 추출
-        let rating = "";
+        // 2. レビュー数
         let reviews = "";
-        const reviewEl = el.querySelector(".rnkRanking_review, .rnkRanking_reviewScore");
-        
-        if (reviewEl) {
-            const text = reviewEl.innerText;
-            // 평점 예: "4.56"
-            const rMatch = text.match(/([0-9]{1}\.[0-9]{2}|[0-9]{1}\.[0-9]{1})/);
-            if (rMatch) rating = rMatch[1];
-            
-            // 리뷰 수 예: "(1,234件)"
-            const cMatch = text.match(/\(([0-9,]+)(件)?\)/);
-            if (cMatch) reviews = cMatch[1];
-        } else {
-            // 리뷰가 일반 a 태그로 있는 경우 백폴링
-            const reviewLinks = [...el.querySelectorAll("a")].filter(a => a.href && a.href.includes("review"));
-            if (reviewLinks.length > 0) {
-                 const text = reviewLinks[0].innerText;
-                 const cMatch = text.match(/([0-9,]+)/);
-                 if (cMatch) reviews = cMatch[1];
-            }
+        const reviewLink = el.querySelector('a[href*="review.rakuten.co.jp"]');
+        if (reviewLink) {
+            const match = reviewLink.innerText.match(/([0-9,]+)/);
+            if (match) reviews = match[1];
         }
         
-        // 빈 데이터(광고 배너 등)는 제외
-        if(title !== "") {
-            rows.push({ rank, title, rating, reviews });
+        // 3. 評価（星の数を計算）
+        let rating = "";
+        const onStars = el.querySelectorAll('.rnkRanking_starON').length;
+        const halfStars = el.querySelectorAll('.rnkRanking_starHALF').length;
+        if (onStars > 0 || halfStars > 0) {
+            rating = (onStars + halfStars * 0.5).toFixed(1); // 例: 4 + 0.5 = 4.5
         }
+        
+        // 順位は配列の長さ + 1 で自動付与
+        rows.push({ rank: rows.length + 1, title, rating, reviews });
     });
-    
-    // 순위를 배열 순서대로 재정렬 (광고 노드 제거 보정)
-    rows.forEach((r, idx) => r.rank = idx + 1);
     
     return JSON.stringify(rows);
 }
