@@ -89,36 +89,36 @@ JS_EXTRACT_AMAZON = """
 # 라쿠텐용 추출 스크립트
 JS_EXTRACT_RAKUTEN = """
 () => {
-    // 1〜3位のボックスと、4位以降のボックスをすべて取得
-    const items = [...document.querySelectorAll(".rnkRanking_top3box, .rnkRanking_itembox, div[class^='rnkRanking_item']")];
     const rows = [];
+    const nameBoxes = [...document.querySelectorAll(".rnkRanking_itemName")];
     
-    items.forEach((el) => {
-        // 1. タイトル
-        const titleEl = el.querySelector(".rnkRanking_itemName");
-        if (!titleEl) return; // タイトルがない要素（広告など）はスキップ
-        const title = titleEl.innerText.trim();
+    nameBoxes.forEach((nameBox, i) => {
+        const title = nameBox.innerText.trim();
+        if (!title) return;
         
-        // 2. レビュー数
+        let parent = nameBox.parentElement;
+        for(let j=0; j<5; j++) { if(parent && parent.parentElement) parent = parent.parentElement; }
+        
         let reviews = "";
-        const reviewLink = el.querySelector('a[href*="review.rakuten.co.jp"]');
-        if (reviewLink) {
-            const match = reviewLink.innerText.match(/([0-9,]+)/);
-            if (match) reviews = match[1];
+        if (parent) {
+            const reviewLink = parent.querySelector('a[href*="review.rakuten.co.jp"]');
+            if (reviewLink) {
+                const match = reviewLink.innerText.match(/([0-9,]+)/);
+                if (match) reviews = match[1];
+            }
         }
         
-        // 3. 評価（星の数を計算）
         let rating = "";
-        const onStars = el.querySelectorAll('.rnkRanking_starON').length;
-        const halfStars = el.querySelectorAll('.rnkRanking_starHALF').length;
-        if (onStars > 0 || halfStars > 0) {
-            rating = (onStars + halfStars * 0.5).toFixed(1); // 例: 4 + 0.5 = 4.5
+        if (parent) {
+            const onStars = parent.querySelectorAll('.rnkRanking_starON').length;
+            const halfStars = parent.querySelectorAll('.rnkRanking_starHALF').length;
+            if (onStars > 0 || halfStars > 0) {
+                rating = (onStars + halfStars * 0.5).toFixed(1);
+            }
         }
         
-        // 順位は配列の長さ + 1 で自動付与
-        rows.push({ rank: rows.length + 1, title, rating, reviews });
+        rows.push({ rank: i + 1, title, rating, reviews });
     });
-    
     return JSON.stringify(rows);
 }
 """
@@ -227,6 +227,9 @@ async def scrape_rakuten_target(browser, country: str, urls: list) -> list:
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         locale="ja-JP", viewport={"width": 1280, "height": 900}, java_script_enabled=True,
     )
+    
+    # 봇 탐지 우회
+    await context.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
 
     page = await context.new_page()
     all_rows = []
@@ -235,9 +238,15 @@ async def scrape_rakuten_target(browser, country: str, urls: list) -> list:
         for url in urls:
             print(f"    GET {url}")
             await page.goto(url, wait_until="domcontentloaded", timeout=40000)
-            await page.wait_for_timeout(3000)
             
-            # 라쿠텐은 리스트가 길고 이미지가 지연 로딩되므로 끝까지 스크롤 해줍니다
+            # 상품 목록이 뜰 때까지 최대 15초 대기
+            try:
+                await page.wait_for_selector(".rnkRanking_itemName", timeout=15000)
+            except:
+                print(f"    ⚠ 라쿠텐 상품 목록 로딩 실패 (차단 가능성)")
+                continue
+
+            # 스크롤
             for _ in range(15):
                 await page.evaluate("window.scrollBy(0, window.innerHeight)")
                 await page.wait_for_timeout(600)
