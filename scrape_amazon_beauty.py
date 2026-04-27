@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Amazon & Rakuten Beauty Best Sellers Scraper
-아마존 6개국 + 미국 하위카테고리 + 라쿠텐 랭킹 추출
+아마존 6개국 + 미국 하위카테고리 + 라쿠텐 + Qoo10
 """
 
 import asyncio
@@ -61,6 +61,12 @@ RAKUTEN_COUNTRIES = {
     ]
 }
 
+QOO10_COUNTRIES = {
+    "Qoo10_JP": [
+        "https://www.qoo10.jp/gmkt.inc/Bestsellers/?g=2"
+    ]
+}
+
 # ─── JavaScript ───────────────────────────────────────────────────────────────
 # 아마존용 추출 스크립트
 JS_EXTRACT_AMAZON = """
@@ -115,6 +121,45 @@ JS_EXTRACT_RAKUTEN = """
             const halfStars = parent.querySelectorAll('.rnkRanking_starHALF').length;
             if (onStars > 0 || halfStars > 0) {
                 rating = (onStars + halfStars * 0.5).toFixed(1);
+            }
+        }
+        
+        rows.push({ rank: i + 1, title, rating, reviews });
+    });
+    return JSON.stringify(rows);
+}
+"""
+
+# Qoo10용 추출 스크립트
+JS_EXTRACT_QOO10 = r"""
+() => {
+    const rows = [];
+    const items = [...document.querySelectorAll("div.item")];
+    
+    items.forEach((item, i) => {
+        const titleEl = item.querySelector("a.tt");
+        const title = titleEl ? titleEl.innerText.trim() : "";
+        if (!title) return;
+        
+        const reviewCountEl = item.querySelector("span.review_total_count");
+        let reviews = reviewCountEl ? reviewCountEl.innerText.replace(/[^0-9]/g, '') : "";
+        
+        const ratingEl = item.querySelector("div.review_rating_star");
+        let rating = "";
+        if (ratingEl) {
+            const style = ratingEl.getAttribute("style");
+            if (style) {
+                const match = style.match(/width:\s*([0-9.]+)%/);
+                if (match) {
+                    // Qoo10 uses width percentage for rating. We could return the percentage or convert to 5-star format.
+                    // Converting width to 5-star scale (e.g. 100% -> 5.0).
+                    const percent = parseFloat(match[1]);
+                    // Sometimes Qoo10 might use weird multipliers (like 1920% in your example?), 
+                    // Let's just grab what we can, or just keep the raw value.
+                    // Given the 1920% anomaly, maybe let's just return the raw style match for safety,
+                    // or just standard percent/20. Let's return raw % for now or leave empty if weird.
+                    rating = match[1] + "%"; 
+                }
             }
         }
         
@@ -276,6 +321,46 @@ async def scrape_rakuten_target(browser, country: str, urls: list) -> list:
     return all_rows
 
 
+async def scrape_qoo10_target(browser, country: str, urls: list) -> list:
+    context = await browser.new_context(
+        user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        locale="ja-JP", viewport={"width": 1920, "height": 1080}, java_script_enabled=True,
+    )
+    
+    # 봇 탐지 우회
+    await context.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
+
+    page = await context.new_page()
+    await Stealth().apply_stealth_async(page)
+    all_rows = []
+
+    try:
+        for url in urls:
+            print(f"    GET {url}")
+            await page.goto(url, wait_until="domcontentloaded", timeout=40000)
+            
+            # 상품 목록이 뜰 때까지 최대 15초 대기
+            try:
+                await page.wait_for_selector("div.item", timeout=15000)
+            except:
+                print(f"    ⚠ Qoo10 상품 목록 로딩 실패 (차단 가능성)")
+                continue
+
+            # 스크롤 (lazy load 방지)
+            for _ in range(15):
+                await page.evaluate("window.scrollBy(0, window.innerHeight)")
+                await page.wait_for_timeout(600)
+                
+            raw = await page.evaluate(JS_EXTRACT_QOO10)
+            rows = json.loads(raw)
+            print(f"    → {len(rows)}개 추출")
+            all_rows.extend(rows)
+            
+    finally:
+        await context.close()
+
+    return all_rows
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 async def main():
     today = datetime.now().strftime("%Y-%m-%d")
@@ -313,6 +398,17 @@ async def main():
             print(f"\n[라쿠텐 - {country}] 스크래핑 시작...")
             try:
                 rows = await scrape_rakuten_target(browser, country, urls)
+                country_data[country] = rows
+                print(f"[{country}] 완료 — 총 {len(rows)}개")
+            except Exception as e:
+                print(f"[{country}] 오류: {e}")
+                country_data[country] = []
+
+        # 3. Qoo10 스크래핑
+        for country, urls in QOO10_COUNTRIES.items():
+            print(f"\n[Qoo10 - {country}] 스크래핑 시작...")
+            try:
+                rows = await scrape_qoo10_target(browser, country, urls)
                 country_data[country] = rows
                 print(f"[{country}] 완료 — 총 {len(rows)}개")
             except Exception as e:
