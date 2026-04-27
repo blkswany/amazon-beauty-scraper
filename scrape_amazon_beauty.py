@@ -17,6 +17,7 @@ if sys.stdout.encoding != "utf-8":
 
 import pandas as pd
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
+from playwright_stealth import Stealth
 
 # ─── URLs ─────────────────────────────────────────────────────────────────────
 AMAZON_COUNTRIES = {
@@ -225,13 +226,26 @@ async def scrape_amazon_country(browser, country: str, urls: list) -> list:
 async def scrape_rakuten_target(browser, country: str, urls: list) -> list:
     context = await browser.new_context(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        locale="ja-JP", viewport={"width": 1280, "height": 900}, java_script_enabled=True,
+        locale="ja-JP", viewport={"width": 1920, "height": 1080}, java_script_enabled=True,
+        extra_http_headers={
+            "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
+        }
     )
     
     # 봇 탐지 우회
     await context.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
 
     page = await context.new_page()
+    await Stealth().apply_stealth_async(page)
     all_rows = []
 
     try:
