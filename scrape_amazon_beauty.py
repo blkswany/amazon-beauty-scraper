@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Amazon & Rakuten Beauty Best Sellers Scraper
-아마존 6개국 + 미국 하위카테고리 + 라쿠텐 + Qoo10
+아마존 6개국 + 미국 하위카테고리 + 라쿠텐 랭킹 추출
 """
 
 import asyncio
@@ -79,6 +79,9 @@ JS_EXTRACT_AMAZON = """
                      || el.querySelector("span.p13n-sc-truncate-desktop-type2");
         const title = titleEl ? titleEl.innerText.trim() : "";
 
+        // 아마존은 랭킹 페이지에서 브랜드명이 항상 명시적으로 분리되어 있지 않으므로 빈 문자열 처리
+        const brand = "";
+
         const reviewLink = el.querySelector("a[aria-label*='stars']")
                         || el.querySelector("a[aria-label*='out of']");
         const ariaLabel = reviewLink ? reviewLink.getAttribute("aria-label") : "";
@@ -87,7 +90,7 @@ JS_EXTRACT_AMAZON = """
         const reviewsEl = el.querySelector("span.a-size-small[aria-hidden='true']");
         const reviews = reviewsEl ? reviewsEl.innerText.trim() : "";
 
-        rows.push({ rank: i + 1, title, rating, reviews });
+        rows.push({ rank: i + 1, brand, title, rating, reviews });
     });
     return JSON.stringify(rows);
 }
@@ -106,12 +109,18 @@ JS_EXTRACT_RAKUTEN = """
         let parent = nameBox.parentElement;
         for(let j=0; j<5; j++) { if(parent && parent.parentElement) parent = parent.parentElement; }
         
+        let brand = "";
         let reviews = "";
         if (parent) {
             const reviewLink = parent.querySelector('a[href*="review.rakuten.co.jp"]');
             if (reviewLink) {
                 const match = reviewLink.innerText.match(/([0-9,]+)/);
                 if (match) reviews = match[1];
+            }
+            
+            const shopLink = parent.querySelector('.rnkRanking_shop a');
+            if (shopLink) {
+                brand = shopLink.innerText.trim();
             }
         }
         
@@ -124,7 +133,7 @@ JS_EXTRACT_RAKUTEN = """
             }
         }
         
-        rows.push({ rank: i + 1, title, rating, reviews });
+        rows.push({ rank: i + 1, brand, title, rating, reviews });
     });
     return JSON.stringify(rows);
 }
@@ -135,15 +144,30 @@ JS_EXTRACT_QOO10 = r"""
 () => {
     const rows = [];
     const items = [...document.querySelectorAll("div.item")];
-    
+
     items.forEach((item, i) => {
         const titleEl = item.querySelector("a.tt");
         const title = titleEl ? titleEl.innerText.trim() : "";
         if (!title) return;
-        
+
+        const brandEl = item.querySelector("a.txt_brand");
+        let brand = "";
+        let is_official = false;
+        if (brandEl) {
+            is_official = !!brandEl.querySelector(".official");
+            // title 속성에 公式 배지 없이 순수 브랜드명만 들어 있음
+            brand = (brandEl.getAttribute("title") || "").trim();
+            if (!brand) {
+                // fallback: .official 스팬 제거 후 텍스트 추출
+                const officialSpan = brandEl.querySelector(".official");
+                if (officialSpan) officialSpan.remove();
+                brand = brandEl.innerText.trim();
+            }
+        }
+
         const reviewCountEl = item.querySelector("span.review_total_count");
         let reviews = reviewCountEl ? reviewCountEl.innerText.replace(/[^0-9]/g, '') : "";
-        
+
         const ratingEl = item.querySelector("div.review_rating_star");
         let rating = "";
         if (ratingEl) {
@@ -151,19 +175,15 @@ JS_EXTRACT_QOO10 = r"""
             if (style) {
                 const match = style.match(/width:\s*([0-9.]+)%/);
                 if (match) {
-                    // Qoo10 uses width percentage for rating. We could return the percentage or convert to 5-star format.
-                    // Converting width to 5-star scale (e.g. 100% -> 5.0).
                     const percent = parseFloat(match[1]);
-                    // Sometimes Qoo10 might use weird multipliers (like 1920% in your example?), 
-                    // Let's just grab what we can, or just keep the raw value.
-                    // Given the 1920% anomaly, maybe let's just return the raw style match for safety,
-                    // or just standard percent/20. Let's return raw % for now or leave empty if weird.
-                    rating = match[1] + "%"; 
+                    if (percent <= 100) {
+                        rating = (percent / 20).toFixed(1);
+                    }
                 }
             }
         }
-        
-        rows.push({ rank: i + 1, title, rating, reviews });
+
+        rows.push({ rank: i + 1, brand, is_official, title, rating, reviews });
     });
     return JSON.stringify(rows);
 }
@@ -421,7 +441,10 @@ async def main():
     print(f"\nExcel 파일 저장 중: {output_path}")
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         for country, rows in country_data.items():
-            df = pd.DataFrame(rows if rows else [], columns=["rank", "title", "rating", "reviews"])
+            if rows:
+                df = pd.DataFrame(rows)
+            else:
+                df = pd.DataFrame(columns=["rank", "brand", "title", "rating", "reviews"])
             df.to_excel(writer, sheet_name=country, index=False)
             print(f"  시트 '{country}': {len(df)}행")
 
