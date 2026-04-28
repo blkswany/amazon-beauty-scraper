@@ -37,108 +37,72 @@ COUNTRIES = [
 # ─── 브랜드 매핑 (영어 & 일본어 통합) ──────────────────────────────────────────
 # 라쿠텐 상품명에서 자주 보이는 일본어 표기를 추가했습니다.
 BUILTIN_BRAND_MAP = {
-    # 에이피알
-    "medicube": "에이피알",
-    "メディキューブ": "에이피알",
-    "APR": "에이피알",
-    
-    # 더파운더즈
-    "Anua": "더파운더즈",
-    "アヌア": "더파운더즈",
-    
-    # 구다이글로벌
+    # ─── 영어 키 (Amazon / 영문 타이틀 매칭용) ─────────────────────
+    "medicube":         "에이피알",
+    "EQQUALBERRY":      "부스터스",
+    "Dr.Althea":        "더퓨어랩",
+    "Dr.Melaxin":       "브랜드501",
+    "Anua":             "더파운더즈",
+    "KAHI":             "코리아테크",
+    "Biodance":         "뷰티셀렉션",
+    "d'alba":           "달바글로벌",
+    "d'Alba":           "달바글로벌",
+    "celimax":          "앱솔브랩",
+    "Cosrx":            "아모레퍼시픽",
+    "Illiyoon":         "아모레퍼시픽",
+    "MIZON":            "피에프디",
     "Beauty of Joseon": "구다이글로벌",
-    "朝鮮美女": "구다이글로벌",
-    
-    # 아모레퍼시픽
-    "Cosrx": "아모레퍼시픽",
-    "コスアールエックス": "아모레퍼시픽",
-    "Illiyoon": "아모레퍼시픽",
-    "イリ윤": "아모레퍼시픽",
-    "LANEIGE": "아모레퍼시픽",
-    "ラネージュ": "아모레퍼시픽",
-    "INNISFREE": "아모레퍼시픽",
-    "イニスフリー": "아모레퍼시픽",
-    "Sulwhasoo": "아모레퍼시픽",
-    "雪花秀": "아모레퍼시픽",
-    
+    "TIRTIR":           "구다이글로벌",
+    "VT":               "브이티",
+    "manyo":            "마녀공장",
+    "Manyo":            "마녀공장",
+    "paparecipe":       "코스토리",
+    "ZEROID":           "네오팜",
+
+    # ─── 일본어 카타카나 / 한자 표기 (Rakuten·Qoo10 일본 시트) ─────
+    # 더파운더즈
+    "アヌア":           "더파운더즈",
     # 달바글로벌
-    "d'alba": "달바글로벌",
-    "ダルバ": "달바글로벌",
-    
+    "ダルバ":           "달바글로벌",
+    "ホワイトトリュフファーストスプレー": "달바글로벌",   # d'Alba 시그니처 제품명
     # 티르티르
-    "TIRTIR": "티르티르",
-    "ティルティル": "티르티르",
-    
-    # 브이티 (VT)
-    "VT": "브이티",
-    "브이티": "브이티",
-    "CICA": "브이티", # 라쿠텐에선 VT 대신 CICA로만 적힌 경우가 많음
-    "シカ": "브이티",
-    
+    "ティルティル":      "구다이글로벌",
+    "マスクフィット":    "구다이글로벌",                       # TIRTIR MaskFit 라인
     # 마녀공장
-    "Manyo": "마녀공장",
-    "魔女工場": "마녀공장",
-    
-    # 기타 주요 브랜드
-    "KAHI": "코리아테크",
-    "カヒ": "코리아테크",
-    "Biodance": "뷰티셀렉션",
-    "バイオダンス": "뷰티셀렉션",
-    "Dr.Althea": "더퓨어랩",
-    "ドクターエルシア": "더퓨어랩",
-    "numbuzin": "비나우",
-    "ナンバーズイン": "비나우",
-    "Torriden": "토리든",
-    "トリデン": "토리든",
-    "Rom&nd": "아이패밀리에스씨",
-    "ロムアンド": "아이패밀리에스씨",
-    "unleashia": "언리시아",
-    "アンリシア": "언리시아",
-    "CLIO": "클리오",
-    "クリオ": "클리오",
-    "peripera": "클리오",
-    "ペリペラ": "클리오",
-    "LUNA": "애경산업",
-    "ルナ": "애경산업",
-    "Papa Recipe": "코스토리",
-    "パパレシピ": "코스토리",
-    "INGA": "코스메랩",
-    "インガ": "코스메랩",
-    "AESTURA": "아모레퍼시픽",
-    "エストラ": "아모레퍼시픽",
-    "Centellian24": "동국제약",
-    "センテリアン24": "동국제약",
-    "マデカ": "동국제약",
-    "Real Barrier": "네오팜",
-    "リアルバリア": "네오팜",
-    "Zeroid": "네오팜",
-    "ゼロイド": "네오팜",
-    "BLANC": "블랑",
-    "ブラン": "블랑",
-    "PDRN": "PDRN", # Often points to specific Korean products in Qoo10/Rakuten
-    "Numbuzin": "비나우",
-    "ナンバーズイン": "비나우",
-    "MOLAK": "PIA",
-    "モラク": "PIA",
-    "Larme": "PIA",
-    "ラルム": "PIA",
-    "VT": "브이티",
-    "VTCOSMETICS": "브이티",
-    "ブイティー": "브이티",
-    "ReVIA": "Lcode",
-    "レヴィア": "Lcode",
-    "feliamo": "PIA",
-    "フェリアモ": "PIA",
-    "TOPARDS": "PIA",
-    "トパーズ": "PIA",
-    "EVER COLOR": "アイセイ",
-    "エバーカラー": "アイセイ",
-    "アゼライン酸": "코스데바하", # Often Cos de Baha in JP
-    "グルタチオン": "마녀공장/넘버즈인",
-    "ダーマシン": "넘버즈인",
-    "センテラ": "스킨1004",
-    "BND": "BND"
+    "魔女工場":         "마녀공장",
+    "マニョ":           "마녀공장",
+    # 에이피알
+    "メディキューブ":    "에이피알",
+    # 코리아테크
+    "カヒ":             "코리아테크",
+    # 뷰티셀렉션
+    "バイオダンス":      "뷰티셀렉션",
+    # 구다이글로벌
+    "朝鮮美女":         "구다이글로벌",
+    # 아모레퍼시픽 산하
+    "コスアールエックス": "아모레퍼시픽",                  # COSRX
+    "イニスフリー":      "아모레퍼시픽",                  # innisfree
+    "ラネージュ":        "아모레퍼시픽",                  # LANEIGE
+    "雪花秀":           "아모레퍼시픽",                  # Sulwhasoo
+    "アトバリア":        "아모레퍼시픽",                  # Atobarrier (ESTRA)
+    "エストラ":          "아모레퍼시픽",                  # ESTRA
+    # 파파레시피
+    "パパレシピ":        "코스토리",
+    # 네오팜
+    "リアルバリア":      "네오팜",                       # Real Barrier
+    "エクストリームクリームマスク": "네오팜",              # Real Barrier 시그니처
+    # 동국제약 (센텔리안24)
+    "マデカクリーム":    "동국제약",                     # Madeca (Centellian 24)
+    # 주의: "マデカ" 단독은 사용 금지 — "マデカッソシド"(성분명)에 오매칭됨
+    # 비나우
+    "ナンバーズイン":    "비나우",                       # numbuzin
+    # 토리든
+    "トリデン":          "토리든",
+    # 아이패밀리에스씨
+    "ロムアンド":        "아이패밀리에스씨",              # rom&nd
+    # 클리오
+    "クリオ":            "클리오",
+    "ペリペラ":          "클리오",                       # peripera
 }
 
 # ─── Style & Helpers ──────────────────────────────────────────────────────────
@@ -173,12 +137,16 @@ def load_brand_mapping():
             print(f"  [경고] 템플릿 로드 실패: {e}")
     return brands
 
-def match_brand(title, brand_map):
-    """타이틀에서 영어/일본어 브랜드를 찾아 한국 기업명 반환"""
-    if not isinstance(title, str): return ""
-    for brand, company in brand_map.items():
-        # 대소문자 무관하게 정규식 매칭
-        if re.search(re.escape(brand), title, re.IGNORECASE):
+def match_brand(title, brand_map, brand=""):
+    """브랜드 필드 직접 매칭 → 타이틀 서브스트링 매칭 순으로 한국 기업명 반환"""
+    if brand and isinstance(brand, str):
+        for key, company in brand_map.items():
+            if key.lower() == brand.lower():
+                return company
+    if not isinstance(title, str):
+        return ""
+    for key, company in brand_map.items():
+        if re.search(re.escape(key), title, re.IGNORECASE):
             return company
     return ""
 
@@ -193,26 +161,37 @@ def write_brand_sheet(wb, brand_map):
         _cell(ws, r, 1, brand)
         _cell(ws, r, 2, company, bold=True, h_align="center")
 
-def write_country_sheet(wb, country_ko, df_raw, brand_map):
+def write_country_sheet(wb, country_ko, df_raw, brand_map, country_en=""):
     ws = wb.create_sheet(title=country_ko)
-    for col, w in enumerate([6, 90, 8, 12, 14], 1):
+    is_qoo10 = country_en == "Qoo10_JP"
+
+    if is_qoo10:
+        widths = [6, 90, 12, 14]
+        hdrs = ["rank", "title", "reviews", "기업명"]
+    else:
+        widths = [6, 90, 8, 12, 14]
+        hdrs = ["rank", "title", "rating", "reviews", "기업명"]
+
+    for col, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(col)].width = w
-    
-    hdrs = ["rank", "title", "rating", "reviews", "기업명"]
     for col, h in enumerate(hdrs, 1):
         _cell(ws, 1, col, h, fill=FILL_BRAND_H, bold=True, font_color="FFFFFF", h_align="center")
 
     for i, row in df_raw.iterrows():
         r = i + 2
         title = row.get("title", "")
-        company = match_brand(title, brand_map)
+        company = match_brand(title, brand_map, brand=row.get("brand", ""))
         fill = FILL_KOREAN if company else None
-        
-        _cell(ws, r, 1, row["rank"], fill=fill, h_align="center")
+
+        _cell(ws, r, 1, row.get("rank", ""), fill=fill, h_align="center")
         _cell(ws, r, 2, title, fill=fill, wrap=True)
-        _cell(ws, r, 3, row.get("rating", ""), fill=fill, h_align="center")
-        _cell(ws, r, 4, row.get("reviews", ""), fill=fill, h_align="center")
-        _cell(ws, r, 5, company, fill=fill, h_align="center", bold=bool(company))
+        if is_qoo10:
+            _cell(ws, r, 3, row.get("reviews", ""), fill=fill, h_align="center")
+            _cell(ws, r, 4, company, fill=fill, h_align="center", bold=bool(company))
+        else:
+            _cell(ws, r, 3, row.get("rating", ""), fill=fill, h_align="center")
+            _cell(ws, r, 4, row.get("reviews", ""), fill=fill, h_align="center")
+            _cell(ws, r, 5, company, fill=fill, h_align="center", bold=bool(company))
     ws.freeze_panes = "A2"
 
 # ─── 한국 정리 시트 (디자인은 이전과 동일) ──────────────────────────────────────
@@ -233,40 +212,64 @@ def _kcell(ws, row, col, value=None, fill=None, bold=False, font_color="2D2D2D",
 
 def write_korean_summary(wb, country_data, brand_map):
     ws = wb.create_sheet(title="한국 정리")
-    STRIDE = 6
+
+    # 국가별 컬럼 구성: Qoo10은 평점 제외 (4컬럼), 그 외는 5컬럼
+    def cols_of(en):
+        if en == "Qoo10_JP":
+            return {"labels": ["순위", "제품", "리뷰", "회사"],
+                    "widths": [5, 48, 9, 13]}
+        return {"labels": ["순위", "제품", "평점", "리뷰", "회사"],
+                "widths": [5, 48, 6, 9, 13]}
+
     korean_by_country = []
     for en, ko in COUNTRIES:
         df = country_data.get(en, pd.DataFrame())
-        rows = [{"rank": r["rank"], "title": r["title"], "rating": r.get("rating",""), 
-                 "reviews": r.get("reviews",""), "company": match_brand(r["title"], brand_map)} 
-                for _, r in df.iterrows() if match_brand(r["title"], brand_map)]
+        rows = [{"rank": r.get("rank",""), "title": r.get("title",""), "rating": r.get("rating",""),
+                 "reviews": r.get("reviews",""), "company": match_brand(r.get("title",""), brand_map, brand=r.get("brand",""))}
+                for _, r in df.iterrows() if match_brand(r.get("title",""), brand_map, brand=r.get("brand",""))]
         korean_by_country.append(rows)
+
+    # 국가별 base 컬럼 위치 누적 계산 (컬럼 수 + 1칸 갭)
+    bases = []
+    offset = 1
+    for en, ko in COUNTRIES:
+        bases.append(offset)
+        offset += len(cols_of(en)["labels"]) + 1
 
     max_rows = max((len(r) for r in korean_by_country), default=0)
     for ci, (en, ko) in enumerate(COUNTRIES):
-        base = ci * STRIDE + 1
-        for j, w in enumerate([5, 48, 6, 9, 13]): ws.column_dimensions[get_column_letter(base+j)].width = w
-        ws.merge_cells(start_row=1, start_column=base, end_row=1, end_column=base+4)
+        base = bases[ci]
+        cfg = cols_of(en)
+        n = len(cfg["labels"])
+        for j, w in enumerate(cfg["widths"]):
+            ws.column_dimensions[get_column_letter(base+j)].width = w
+        ws.merge_cells(start_row=1, start_column=base, end_row=1, end_column=base+n-1)
         _kcell(ws, 1, base, "Best Sellers in Beauty", fill=GRAY_TITLE, bold=True, font_color="FFFFFF", h_align="center")
-        ws.merge_cells(start_row=2, start_column=base, end_row=2, end_column=base+4)
+        ws.merge_cells(start_row=2, start_column=base, end_row=2, end_column=base+n-1)
         _kcell(ws, 2, base, ko, fill=GRAY_COUNTRY, bold=True, font_color="FFFFFF", h_align="center")
-        for j, lbl in enumerate(["순위", "제품", "평점", "리뷰", "회사"]):
+        for j, lbl in enumerate(cfg["labels"]):
             _kcell(ws, 3, base+j, lbl, fill=GRAY_HEADER, bold=True, h_align="center")
 
     for idx in range(max_rows):
         r = idx + 4
         row_fill = PatternFill("solid", fgColor="FFFFFF") if idx % 2 == 0 else PatternFill("solid", fgColor="F2F2F2")
-        for ci, rows in enumerate(korean_by_country):
-            base = ci * STRIDE + 1
+        for ci, (en, ko) in enumerate(COUNTRIES):
+            base = bases[ci]
+            rows = korean_by_country[ci]
+            n = len(cols_of(en)["labels"])
             if idx < len(rows):
                 item = rows[idx]
                 _kcell(ws, r, base, item["rank"], fill=row_fill, h_align="center", bold=True)
                 _kcell(ws, r, base+1, item["title"], fill=row_fill)
-                _kcell(ws, r, base+2, item["rating"], fill=row_fill, h_align="center")
-                _kcell(ws, r, base+3, item["reviews"], fill=row_fill, h_align="center")
-                _kcell(ws, r, base+4, item["company"], fill=GRAY_COMPANY, h_align="center", bold=True)
+                if en == "Qoo10_JP":
+                    _kcell(ws, r, base+2, item["reviews"], fill=row_fill, h_align="center")
+                    _kcell(ws, r, base+3, item["company"], fill=GRAY_COMPANY, h_align="center", bold=True)
+                else:
+                    _kcell(ws, r, base+2, item["rating"], fill=row_fill, h_align="center")
+                    _kcell(ws, r, base+3, item["reviews"], fill=row_fill, h_align="center")
+                    _kcell(ws, r, base+4, item["company"], fill=GRAY_COMPANY, h_align="center", bold=True)
             else:
-                for j in range(5): _kcell(ws, r, base+j, fill=row_fill)
+                for j in range(n): _kcell(ws, r, base+j, fill=row_fill)
     ws.freeze_panes = "A4"
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -287,7 +290,7 @@ def main():
     wb.remove(wb.active)
     write_brand_sheet(wb, brand_map)
     for en, ko in COUNTRIES:
-        write_country_sheet(wb, ko, country_data[en], brand_map)
+        write_country_sheet(wb, ko, country_data[en], brand_map, country_en=en)
     write_korean_summary(wb, country_data, brand_map)
     
     wb.save(args.output)
