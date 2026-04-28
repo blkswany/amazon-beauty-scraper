@@ -39,6 +39,8 @@ COUNTRIES = [
 BUILTIN_BRAND_MAP = {
     # ─── 영어 키 (Amazon / 영문 타이틀 매칭용) ─────────────────────
     "medicube":         "에이피알",
+    "APRILSKIN":        "에이피알",
+    "April Skin":       "에이피알",
     "EQQUALBERRY":      "부스터스",
     "Dr.Althea":        "더퓨어랩",
     "Dr.Melaxin":       "브랜드501",
@@ -50,6 +52,8 @@ BUILTIN_BRAND_MAP = {
     "celimax":          "앱솔브랩",
     "Cosrx":            "아모레퍼시픽",
     "Illiyoon":         "아모레퍼시픽",
+    "AESTURA":          "아모레퍼시픽",
+    "ESTRA":            "아모레퍼시픽",
     "MIZON":            "피에프디",
     "Beauty of Joseon": "구다이글로벌",
     "TIRTIR":           "구다이글로벌",
@@ -73,6 +77,7 @@ BUILTIN_BRAND_MAP = {
     "マニョ":           "마녀공장",
     # 에이피알
     "メディキューブ":    "에이피알",
+    "エイプリルスキン":  "에이피알",
     # 코리아테크
     "カヒ":             "코리아테크",
     # 뷰티셀렉션
